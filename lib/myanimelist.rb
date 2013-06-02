@@ -1,3 +1,5 @@
+require 'httparty'
+
 class MyAnimeList
 
   class << self
