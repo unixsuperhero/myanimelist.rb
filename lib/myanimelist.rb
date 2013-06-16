@@ -1,7 +1,7 @@
 require 'httparty'
 
 class MyAnimeList
-  attr_accessor :config, :anime, :manga
+  attr_accessor :config, :anime, :manga, :last_message
 
   def initialize(options={})
     @config = Config.new options
@@ -12,6 +12,16 @@ class MyAnimeList
   def configure(options)
     @config.update options
   end
+
+  def search_anime(term)                     @last_message = Anime.search(term, config)         end
+  def add_anime(id, status='completed')      @last_message = Anime.add(id, status, config)      end
+  def update_anime(id, status='completed')   @last_message = Anime.update(id, status, config)   end
+  def delete_anime(id)                       @last_message = Anime.delete(id, config)           end
+
+  def search_manga(term)                     @last_message = Manga.search(term, config)         end
+  def add_manga(id, status='completed')      @last_message = Manga.add(id, status, config)      end
+  def update_manga(id, status='completed')   @last_message = Manga.update(id, status, config)   end
+  def delete_manga(id)                       @last_message = Manga.delete(id, config)           end
 
   class << self
     def config_file
@@ -173,7 +183,7 @@ class MyAnimeList
         Parser.parse(response)
       end
       def add(type, id, data, config)
-        puts [type, id, data, config.account]
+        #puts [type, id, data, config.account]
         config = Config.new(config)
         iface = MyAnimeList.new.send type.to_sym
         response = HTTParty.post "http://myanimelist.net/api/#{type}list/add/#{id}.xml",
