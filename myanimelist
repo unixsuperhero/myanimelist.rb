@@ -1,0 +1,18 @@
+#!/Users/jearsh/.rvm/rubies/ruby-1.9.3-p125/bin/ruby
+
+require './lib/myanimelist'
+
+case ARGV[0]
+when 'search'
+  puts MyAnimeList.new('config.yml').search_anime ARGV[1]
+
+when 'search-anime'
+  puts MyAnimeList.new('config.yml').search_anime ARGV[1]
+
+when 'search-manga'
+  puts MyAnimeList.new('config.yml').search_manga ARGV[1]
+
+else
+  puts 'Command Not Found'
+end
+
