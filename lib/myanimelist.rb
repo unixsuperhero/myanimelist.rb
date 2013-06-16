@@ -21,13 +21,16 @@ class MyAnimeList
       Anime.search(term)
     end
 
-    def add_anime(id,data)
+    def add_anime(id,status='completed')
+      Anime.add(id,status)
     end
 
-    def update_anime(id,data)
+    def update_anime(id,status)
+      Anime.update(id,status)
     end
 
-    def delete_anime(id,data)
+    def delete_anime(id)
+      Anime.delete(id)
     end
 
     def search_manga(term)
@@ -56,11 +59,34 @@ class MyAnimeList
         response = HTTParty.get('http://myanimelist.net/api/anime/search.xml?q=' + term, basic_auth: MyAnimeList.account)
         Parser.parse(response)
       end
-      def add(id,data)
+      def add(id,status='completed')
+        puts "xml(status) = #{xml(status)}"
+        response = HTTParty.post "http://myanimelist.net/api/animelist/add/#{id}.xml",
+          basic_auth: MyAnimeList.account,
+          body: {
+            id: id,
+            data: xml(status)
+          }
       end
-      def update(id,data)
+      def update(id,status='completed')
+        puts "xml(status) = #{xml(status)}"
+        response = HTTParty.post "http://myanimelist.net/api/animelist/update/#{id}.xml",
+          basic_auth: MyAnimeList.account,
+          body: {
+            id: id,
+            data: xml(status)
+          }
       end
-      def delete(id,data)
+      def delete(id)
+        response = HTTParty.post "http://myanimelist.net/api/animelist/delete/#{id}.xml",
+          basic_auth: MyAnimeList.account
+      end
+
+      def xml(status)
+        %~<?xml version="1.0" encoding="UTF-8"?>
+          <entry>
+            <status>#{status}</status>
+          </entry>~
       end
     end
   end
@@ -71,7 +97,13 @@ class MyAnimeList
         response = HTTParty.get('http://myanimelist.net/api/manga/search.xml?q=' + term, basic_auth: MyAnimeList.account)
         Parser.parse(response)
       end
-      def add(id,data)
+      def add(id,status='completed')
+        response = HTTParty.post("http://myanimelist.net/api/mangalist/add/#{id}.xml", basic_auth: MyAnimeList.account, body: <<-BODY)
+<?xml version="1.0" encoding="UTF-8"?>
+<entry>
+  <status>#{status}</status>
+</entry>
+        BODY
       end
       def update(id,data)
       end
@@ -84,5 +116,12 @@ end
 #puts "ARGV = #{ARGV.inspect}    \nARGV[0] = #{ARGV[0]}"
 search_term = ARGV[0] || 'bakuman'
 results = MyAnimeList.search_manga(search_term)
+
+# working
+#results = MyAnimeList.search_anime(search_term)
+#results = MyAnimeList.add_anime(10030,'watching')
+#results = MyAnimeList.update_anime(7674,'completed')
+#results = MyAnimeList.delete_anime(7674)
+
 #puts [results.class, HTTParty::Parser.new(results, :xml).parse]
-puts results
+y results
