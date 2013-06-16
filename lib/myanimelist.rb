@@ -18,8 +18,7 @@ class MyAnimeList
     end
 
     def search_anime(term)
-      response = HTTParty.get('http://myanimelist.net/api/anime/search.xml?q=' + term, basic_auth: MyAnimeList.account)
-      parse_data(response)
+      Anime.search(term)
     end
 
     def add_anime(id,data)
@@ -32,8 +31,7 @@ class MyAnimeList
     end
 
     def search_manga(term)
-      response = HTTParty.get('http://mymangalist.net/api/anime/search.xml?q=' + term, basic_auth: MyAnimeList.account)
-      parse_data(response)
+      Manga.search(term)
     end
 
     def add_manga(id,data)
@@ -44,10 +42,6 @@ class MyAnimeList
 
     def delete_manga(id,data)
     end
-
-    def parse_data(data)
-      Parser.parse(data)
-    end
   end
 
   class Parser
@@ -56,28 +50,33 @@ class MyAnimeList
     end
   end
 
-  class Search
-  end
-
   class Anime
-    def search(term)
-    end
-    def add(id,data)
-    end
-    def update(id,data)
-    end
-    def delete(id,data)
+    class << self
+      def search(term)
+        response = HTTParty.get('http://myanimelist.net/api/anime/search.xml?q=' + term, basic_auth: MyAnimeList.account)
+        Parser.parse(response)
+      end
+      def add(id,data)
+      end
+      def update(id,data)
+      end
+      def delete(id,data)
+      end
     end
   end
 
   class Manga
-    def search(term)
-    end
-    def add(id,data)
-    end
-    def update(id,data)
-    end
-    def delete(id,data)
+    class << self
+      def search(term)
+        response = HTTParty.get('http://myanimelist.net/api/manga/search.xml?q=' + term, basic_auth: MyAnimeList.account)
+        Parser.parse(response)
+      end
+      def add(id,data)
+      end
+      def update(id,data)
+      end
+      def delete(id,data)
+      end
     end
   end
 end
