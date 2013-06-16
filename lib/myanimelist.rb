@@ -11,8 +11,6 @@ class MyAnimeList
 
   def configure(options)
     @config.update options
-    #return @config.merge! Config.new(options) if options.class.to_s =~ /^hash/i
-    #@config.merge! Config.file(options) if options.is_a?(String)
   end
 
   class << self
@@ -30,36 +28,42 @@ class MyAnimeList
       { username: config_file.username, password: config_file.password }
     end
 
-    def search_anime(term)
-      Anime.search(term, MyAnimeList.account)
+    def anime
+      Anime
+    end
+    def manga
+      Manga
+    end
+    def search_anime(term, config)
+      Anime.search(term, config)
     end
 
-    def add_anime(id,status='completed')
-      Anime.add(id,status, MyAnimeList.account)
+    def add_anime(id,status='completed', config)
+      Anime.add(id,status, config)
     end
 
-    def update_anime(id,status)
-      Anime.update(id,status, MyAnimeList.account)
+    def update_anime(id,status, config)
+      Anime.update(id,status, config)
     end
 
-    def delete_anime(id)
-      Anime.delete(id, MyAnimeList.account)
+    def delete_anime(id, config)
+      Anime.delete(id, config)
     end
 
-    def search_manga(term)
-      Manga.search(term, MyAnimeList.account)
+    def search_manga(term, config)
+      Manga.search(term, config)
     end
 
-    def add_manga(id, status)
-      Manga.add(id, status, MyAnimeList.account)
+    def add_manga(id,data, config)
+      Manga.add(id,data, config)
     end
 
-    def update_manga(id, status)
-      Manga.update(id, status, MyAnimeList.account)
+    def update_manga(id,data, config)
+      Manga.update(id,data, config)
     end
 
-    def delete_manga(id)
-      Manga.delete(id, MyAnimeList.account)
+    def delete_manga(id, config)
+      Manga.delete(id,config)
     end
   end
 
@@ -76,6 +80,10 @@ class MyAnimeList
 
     def prepare(opts)
       Config.prepare(opts)
+    end
+
+    def account
+      [:username, :password].inject({}){|p,key| p.merge key => @options[key]}
     end
 
     def username
@@ -121,122 +129,76 @@ class MyAnimeList
 
   class Anime
     class << self
-      def search(term, options)
-        response = HTTParty.get('http://myanimelist.net/api/anime/search.xml?q=' + term, basic_auth: options)
-        Parser.parse(response)
-      end
-      def add(id,status='completed', options)
-        puts "xml(status) = #{xml(status)}"
-        response = HTTParty.post "http://myanimelist.net/api/animelist/add/#{id}.xml",
-          basic_auth: options,
-          body: {
-            id: id,
-            data: xml(status)
-          }
-      end
-      def update(id,status='completed', options)
-        puts "xml(status) = #{xml(status)}"
-        response = HTTParty.post "http://myanimelist.net/api/animelist/update/#{id}.xml",
-          basic_auth: options,
-          body: {
-            id: id,
-            data: xml(status)
-          }
-      end
-      def delete(id, options)
-        response = HTTParty.post "http://myanimelist.net/api/animelist/delete/#{id}.xml",
-          basic_auth: options
-      end
+      def type; 'anime' end
+      def search(query, config) API.search(type, query, config); end
+      def add(id, data, config) API.add(type, id, xml(data), config); end
+      def update(id, data, config) API.update(type, id, xml(data), config); end
+      def delete(id, config) API.delete(type, id, config); end
 
-      def xml(status)
-        %~<?xml version="1.0" encoding="UTF-8"?>
+      def xml(data)
+        <<-BODY.sub(/\s\s*/, '')
+          <?xml version="1.0" encoding="UTF-8"?>
           <entry>
-            <status>#{status}</status>
-          </entry>~
+            <status>#{data}</status>
+          </entry>
+        BODY
       end
-    end
-  end
-
-  class API
-    def search(type, query, options)
-      options = Config.new(options)
-      response = HTTParty.get("http://myanimelist.net/api/#{type}/search.xml?q=" + query, basic_auth: options)
-      Parser.parse(response)
-    end
-    def add(type, id, data, options)
-      options = Config.new(options)
-      iface = MyAnimeList.new.send type.to_sym
-      response = HTTParty.post "http://myanimelist.net/api/animelist/add/#{id}.xml",
-        basic_auth: options,
-        body: {
-          id: id,
-          data: iface.xml(data) # xml(status)
-        }
-    end
-    def update(type, id, data, options)
-      options = Config.new(options)
-    end
-    def delete(type, id, options)
-      options = Config.new(options)
-      response = HTTParty.post "http://myanimelist.net/api/animelist/delete/#{id}.xml",
-        basic_auth: options
     end
   end
 
   class Manga
     class << self
-      def search(term, options)
-        response = HTTParty.get('http://myanimelist.net/api/manga/search.xml?q=' + term, basic_auth: options)
-        Parser.parse(response)
-      end
-      def add(id,status='completed', options)
-        response = HTTParty.post("http://myanimelist.net/api/mangalist/add/#{id}.xml", basic_auth: options, body: <<-BODY)
-<?xml version="1.0" encoding="UTF-8"?>
-<entry>
-  <status>#{status}</status>
-</entry>
+      def type; 'manga' end
+      def search(query, config) API.search(type, query, config); end
+      def add(id, data, config) API.add(type, id, xml(data), config); end
+      def update(id, data, config) API.update(type, id, xml(data), config); end
+      def delete(id, config) API.delete(type, id, config); end
+      def xml(data)
+        <<-BODY.sub(/\s\s*/, '')
+          <?xml version="1.0" encoding="UTF-8"?>
+          <entry>
+            <status>#{data}</status>
+          </entry>
         BODY
       end
-      def update(id,data, options)
+    end
+  end
+
+  class API
+    class << self
+      def search(type, query, config)
+        config = Config.new(config)
+        response = HTTParty.get "http://myanimelist.net/api/#{type}/search.xml?q=" + query,
+                                basic_auth: config.account
+        Parser.parse(response)
       end
-      def delete(id,data, options)
+      def add(type, id, data, config)
+        puts [type, id, data, config.account]
+        config = Config.new(config)
+        iface = MyAnimeList.new.send type.to_sym
+        response = HTTParty.post "http://myanimelist.net/api/#{type}list/add/#{id}.xml",
+          basic_auth: config.account,
+          body: {
+            id: id,
+            data: data #iface.xml(data) # xml(status)
+          }
+      end
+      def update(type, id, data, config)
+        config = Config.new(config)
+        iface = MyAnimeList.new.send type.to_sym
+        response = HTTParty.post "http://myanimelist.net/api/#{type}list/update/#{id}.xml",
+          basic_auth: config.account,
+          body: {
+            id: id,
+            data: data #iface.xml(data) #xml(status)
+          }
+      end
+      def delete(type, id, config)
+        config = Config.new(config)
+        response = HTTParty.post "http://myanimelist.net/api/#{type}list/delete/#{id}.xml",
+          basic_auth: config.account
       end
     end
   end
 end
 
-begin
-  ## TEST CLASSES
-  class RunTests < Exception; end
-  class TestFailed < Exception; end
-
-  raise RunTests if ARGV[0] == 'test'
-
-  #puts "ARGV = #{ARGV.inspect}    \nARGV[0] = #{ARGV[0]}"
-  search_term = ARGV[0] || 'bakuman'
-  results = MyAnimeList.search_manga(search_term)
-
-  # working
-  #results = MyAnimeList.search_anime(search_term)
-  #results = MyAnimeList.add_anime(10030,'watching')
-  #results = MyAnimeList.update_anime(7674,'completed')
-  #results = MyAnimeList.delete_anime(7674)
-
-  #puts [results.class, HTTParty::Parser.new(results, :xml).parse]
-  #y results
-
-  mal = MyAnimeList.new 'config.yml'
-  y mal
-  y mal.config
-  y results
-
-rescue RunTests
-
-  ## TESTS
-  mal = MyAnimeList.new 'config.yml'
-
-  raise TestFailed unless mal.config.username == 'jearsh'
-  raise TestFailed unless mal.config.password == MyAnimeList.config_file.password
-
-  puts "Tests pass!"
-end
