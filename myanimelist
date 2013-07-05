@@ -3,14 +3,30 @@
 require './lib/myanimelist'
 
 case ARGV[0]
-when 'search'
-  puts MyAnimeList.new('config.yml').search_anime ARGV[1]
 
-when 'search-anime'
+when 'search', 'search-anime'
   puts MyAnimeList.new('config.yml').search_anime ARGV[1]
 
 when 'search-manga'
   puts MyAnimeList.new('config.yml').search_manga ARGV[1]
+
+when 'add', 'add-anime'
+  puts MyAnimeList.new('config.yml').add_anime ARGV[1], ARGV[2] || 'completed'
+
+when 'add-manga'
+  puts MyAnimeList.new('config.yml').add_manga ARGV[1], ARGV[2] || 'completed'
+
+when 'update', 'update-anime'
+  puts MyAnimeList.new('config.yml').update_anime ARGV[1], ARGV[2] || 'completed'
+
+when 'update-manga'
+  puts MyAnimeList.new('config.yml').update_manga ARGV[1], ARGV[2] || 'completed'
+
+when 'delete', 'delete-anime'
+  puts MyAnimeList.new('config.yml').delete_anime ARGV[1]
+
+when 'delete-manga'
+  puts MyAnimeList.new('config.yml').delete_manga ARGV[1]
 
 else
   puts 'Command Not Found'
